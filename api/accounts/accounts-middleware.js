@@ -4,25 +4,33 @@ const Accounts = require('./accounts-model');
 
 // this still needs some more work, but functions for now
 const checkAccountPayload = (req, res, next) => {
-  if (!req.body.name || !req.body.budget) {
+  const name = req.body.name.trim();
+  const budget = req.body.budget;
+
+  if (!name || !budget) {
     res.status(400).json({ message: 'name and budget required' });
+  } else if (typeof name !== 'string') {
+    res.status(400).json({ message: 'name of account must be a string' });
+  } else if (name.length < 3 || name.length > 100) {
+    res.status(400).json({ message: 'name of account must be between 3 and 100' });
+  } else if (typeof budget !== 'number') {
+    res.status(400).json({ message: 'budget of account must be a number' });
+  } else if (budget < 0 || budget > 1000000) {
+    res.status(400).json({ message: 'budget of account is too large or too small' });
   } else {
     next();
   }
 };
 
 const checkAccountNameUnique = async (req, res, next) => {
-  try {
-    const account = await Accounts.get(req.body.name.trim());
-    if (account) {
-      res.status(400).res.json({ message: 'that name is taken' });
+    const test = await Accounts.getByName(req.body.name);
+    const name = req.body.name.trim();
+
+    if (test[0].name.trim() === name) {
+      res.status(400).json({ message: 'that name is taken' });
     } else {
-      req.account = account;
       next();
     }
-  } catch {
-    res.status(500).json({ message: 'something went wrong checking the name' });
-  }
 };
 
 const checkAccountId = async (req, res, next) => {
